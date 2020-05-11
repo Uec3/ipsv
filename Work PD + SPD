@@ -1,0 +1,75 @@
+import pymurapi as mur
+from array import *
+import time
+auv= mur.mur_init()
+prev_time_depth=1
+prev_error_depth=1
+prev_error_yaw=1
+prev_time_yaw=1
+target_yaw = 170
+target_depth = 3
+spd_yaw =50 
+def start_move():
+    start_depth()
+    start_yaw()
+def start_depth():
+    curent_time = int(round(time.time()*1000))
+    global target_depth
+    global prev_time_depth
+    print(curent_time-prev_time_depth)
+    global prev_error_depth
+    error = auv.get_depth()-target_depth
+    dif  = 0
+    if(curent_time-prev_time_depth!=0 and error - prev_error_depth!=0 ):
+        dif = 5/((curent_time-prev_time_depth)*(error - prev_error_depth))
+    power_value = error *18+dif*10
+    #print (power_value)
+    power_1 = power_value
+    power_2 = power_value
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    auv.set_motor_power(2,power_1)
+    auv.set_motor_power(3,power_2)
+    prev_time_depth = curent_time
+    prev_error_depth = error
+def start_yaw():
+    global spd_yaw
+    global prev_error_yaw
+    global target_yaw 
+    global prev_time_yaw
+    curent_time = int(round(time.time()*1000))
+    error = auv.get_yaw()-target_yaw
+    dif = 3/(curent_time-prev_time_yaw)*(error - prev_error_yaw)
+    power_value = error *0.3+dif*40
+    #print (power_value)
+    power_1 = power_value
+    power_2 = power_value
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    auv.set_motor_power(0,spd_yaw-power_1)
+    auv.set_motor_power(1,spd_yaw+power_2)
+    prev_time = curent_time
+    prev_error_yaw = error                                               
+def set_course(yaw,depth,spd_yaw_target):
+    global spd_yaw
+    spd_yaw = spd_yaw_target
+    global target_depth
+    target_depth = depth
+    global target_yaw
+    target_yaw = yaw 
+a=0
+while a<100000:
+    a=a+1
+    set_course(30,3,10)
+    start_move()
+a=0
+while a<100000:
+    a=a+1
+    set_course(90,3,100)
+    start_move()
+    
+    
