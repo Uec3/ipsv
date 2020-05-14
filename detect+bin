@@ -1,0 +1,70 @@
+import pymurapi as mur
+import numpy as np
+import cv2
+import math
+
+auv = mur.mur_init()
+hsv_min = np.array((0, 114, 167), np.uint8)
+hsv_max = np.array((181, 255, 255), np.uint8)
+color_blue = (255,0,0)
+color_yellow = (0,255,255)
+def noth(x):
+    pass
+chmax = 255
+cv2.namedWindow("Bin")
+cv2.createTrackbar('hmin','Bin' ,0, chmax, noth)
+cv2.createTrackbar('hmax','Bin' ,0, chmax, noth)
+cv2.createTrackbar('smin','Bin' ,0, chmax, noth)
+cv2.createTrackbar('smax','Bin' ,0, chmax, noth)
+cv2.createTrackbar('vmin','Bin' ,0, chmax, noth)
+cv2.createTrackbar('vmax','Bin' ,0, chmax, noth)
+def search_sq(img):
+    hsv = cv2.cvtColor( img, cv2.COLOR_BGR2HSV ) # меняем цветовую модель с BGR на HSV
+    thresh = cv2.inRange( hsv, hsv_min, hsv_max ) # применяем цветовой фильт
+    contours, hierarchy = cv2.findContours( thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #cv2.drawContours( img, contours0, -1, (255,0,0), 1, cv2.LINE_AA, hierarchy, 1 )
+     #перебираем все найденные контуры в цикле
+    for cnt in contours:
+        #if cnt.all() < 800:
+        #    continue
+        rect = cv2.minAreaRect(cnt) # пытаемся вписать прямоугольник
+        box = cv2.boxPoints(rect) # поиск четырех вершин прямоугольника
+        box = np.int0(box) # округление координат
+        center = (int(rect[0][0]),int(rect[0][1]))
+        area = int(rect[1][0]*rect[1][1]) # вычисление площади
+        edge1 = np.int0((box[1][0] - box[0][0],box[1][1] - box[0][1]))
+        edge2 = np.int0((box[2][0] - box[1][0], box[2][1] - box[1][1]))
+        usedEdge = edge1
+        if cv2.norm(edge2) > cv2.norm(edge1):
+            usedEdge = edge2
+        reference = (1,0) # горизонтальный вектор, задающий горизонт
+
+        # вычисляем угол между самой длинной стороной прямоугольника и горизонтом
+        angle = 180.0/math.pi * math.acos((reference[0]*usedEdge[0] + reference[1]*usedEdge[1]) / (cv2.norm(reference)*cv2.norm(usedEdge)))
+        if area > 300:
+           cv2.drawContours(img,[box],0,(255,0,0),2)
+           cv2.circle(img, center, 5, color_yellow, 2) # рисуем маленький кружок в центре прямоугольника
+        # выводим в кадр величину угла наклона
+           print(angle)
+           #cv2.putText(img, "%d" % int(angle), (center[0]+20, center[1]-20),cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
+    to_draw = img.copy()                    
+    cv2.imshow("Image", to_draw)
+    # cv2.imshow('contours', img) # вывод обработанного кадра в окно
+    cv2.waitKey(5)
+while True:
+   dt = np.dtype(int)
+   image = auv.get_image_bottom() 
+   cv2.imshow('Image', image)
+   hmin = cv2.getTrackbarPos('hmin','Bin')
+   hmax = cv2.getTrackbarPos('hmax','Bin')
+   smin = cv2.getTrackbarPos('smin','Bin')
+   smax = cv2.getTrackbarPos('smax','Bin')
+   vmin = cv2.getTrackbarPos('vmin','Bin')
+   vmax = cv2.getTrackbarPos('vmax','Bin')
+   cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+   hsv_min = np.array((hmin, smin, vmin), dt)
+   hsv_max = np.array((hmax, smax, vmax), dt)
+   mask = cv2.inRange(image, hsv_min, hsv_max, image)
+   cv2.imshow("Bin", mask)
+   search_sq(image)
+   
