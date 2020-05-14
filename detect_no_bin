@@ -1,0 +1,43 @@
+import pymurapi as mur
+import numpy as np
+import cv2
+import math
+
+auv = mur.mur_init()
+hsv_min = np.array((0, 54, 5), np.uint8)
+hsv_max = np.array((187, 255, 253), np.uint8)
+color_blue = (255,0,0)
+color_yellow = (0,255,255)
+def search_sq(img):
+    hsv = cv2.cvtColor( img, cv2.COLOR_BGR2HSV ) # меняем цветовую модель с BGR на HSV
+    thresh = cv2.inRange( hsv, hsv_min, hsv_max ) # применяем цветовой фильтр
+    contours0, hierarchy = cv2.findContours( thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # перебираем все найденные контуры в цикле
+    for cnt in contours0:
+        rect = cv2.minAreaRect(cnt) # пытаемся вписать прямоугольник
+        box = cv2.boxPoints(rect) # поиск четырех вершин прямоугольника
+        box = np.int0(box) # округление координат
+        center = (int(rect[0][0]),int(rect[0][1]))
+        area = int(rect[1][0]*rect[1][1]) # вычисление площади
+        edge1 = np.int0((box[1][0] - box[0][0],box[1][1] - box[0][1]))
+        edge2 = np.int0((box[2][0] - box[1][0], box[2][1] - box[1][1]))
+        usedEdge = edge1
+        if cv2.norm(edge2) > cv2.norm(edge1):
+            usedEdge = edge2
+        reference = (1,0) # горизонтальный вектор, задающий горизонт
+
+        # вычисляем угол между самой длинной стороной прямоугольника и горизонтом
+        angle = 180.0/math.pi * math.acos((reference[0]*usedEdge[0] + reference[1]*usedEdge[1]) / (cv2.norm(reference)*cv2.norm(usedEdge)))
+        if area > 300:
+           cv2.drawContours(img,[box],0,(255,0,0),2)
+           cv2.circle(img, center, 5, color_yellow, 2) # рисуем маленький кружок в центре прямоугольника
+        # выводим в кадр величину угла наклона
+           cv2.putText(img, "%d" % int(angle), (center[0]+20, center[1]-20),cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
+    to_draw = img.copy()                    
+    cv2.imshow("Image", to_draw)
+    # cv2.imshow('contours', img) # вывод обработанного кадра в окно
+    cv2.waitKey(5)
+if __name__ == '__main__':
+  while True:
+		 search_sq(auv.get_image_bottom())
