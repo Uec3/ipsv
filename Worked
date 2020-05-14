@@ -1,0 +1,154 @@
+import pymurapi as mur
+from array import *
+import time
+import numpy as np
+import cv2
+import math
+auv= mur.mur_init()
+prev_time_depth=1
+prev_error_depth=1
+prev_error_yaw=1
+prev_time_yaw=1
+target_yaw = 170
+target_depth = 3
+spd_yaw = 50 
+hsv_min = np.array((0, 144, 167), np.uint8)
+hsv_max = np.array((181, 255, 255), np.uint8)
+color_blue = (255,0,0)
+color_yellow = (0,255,255)
+angle = 0
+area =0
+center = 0
+def search_sq(img):
+    hsv = cv2.cvtColor( img, cv2.COLOR_BGR2HSV ) # меняем цветовую модель с BGR на HSV
+    thresh = cv2.inRange( hsv, hsv_min, hsv_max ) # применяем цветовой фильтр
+    contours0, hierarchy = cv2.findContours( thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # перебираем все найденные контуры в цикле
+    for cnt in contours0:
+        rect = cv2.minAreaRect(cnt) # пытаемся вписать прямоугольник
+        box = cv2.boxPoints(rect) # поиск четырех вершин прямоугольника
+        box = np.int0(box) # округление координат
+        global center
+        center = (int(rect[0][0]),int(rect[0][1]))
+        global area
+        area = int(rect[1][0]*rect[1][1]) # вычисление площади
+        edge1 = np.int0((box[1][0] - box[0][0],box[1][1] - box[0][1]))
+        edge2 = np.int0((box[2][0] - box[1][0], box[2][1] - box[1][1]))
+        usedEdge = edge1
+        if cv2.norm(edge2) > cv2.norm(edge1):
+            usedEdge = edge2
+        reference = (1,0) # горизонтальный вектор, задающий горизонт
+        # вычисляем угол между самой длинной стороной прямоугольника и горизонтом
+        if(rect[1][1]>10):
+            global angle
+            angle = 180.0/math.pi * math.acos((reference[0]*usedEdge[0] + reference[1]*usedEdge[1]) / (cv2.norm(reference)*cv2.norm(usedEdge)))
+            if area > 1000:
+               cv2.drawContours(img,[box],0,(255,0,0),2)
+               cv2.circle(img, center, 5, color_yellow, 2) # рисуем маленький кружок в центре прямоугольника
+            # выводим в кадр величину угла наклона
+               cv2.putText(img, "%d" % int(area), (center[0]+20, center[1]-20),cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
+    to_draw = img.copy()                    
+    cv2.imshow("Image", to_draw)
+    # cv2.imshow('contours', img) # вывод обработанного кадра в окно
+    cv2.waitKey(50) 
+    #time.sleep(0.3)
+def center_v_centre():
+    global center
+    if center == (160, 120):
+        return 1
+def start_move():
+    start_depth()
+    start_yaw()
+def start_depth():
+    curent_time = int(round(time.time()*1000))
+    global target_depth
+    global prev_time_depth
+    global prev_error_depth
+    error = auv.get_depth()-target_depth
+    dif  = 0
+    if(curent_time-prev_time_depth!=0 and error - prev_error_depth!=0 ):
+        dif = 5/((curent_time-prev_time_depth)*(error - prev_error_depth))
+    power_value = error *10
+    power_1 =int(power_value)
+    power_2 =int(power_value)
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    #print("depth")
+    #print (int(power_value))
+   # print('\n')
+    auv.set_motor_power(2,(power_1))
+    auv.set_motor_power(3,(power_2))
+    prev_time_depth = curent_time
+    prev_error_depth = error
+def start_yaw():
+    global spd_yaw
+    global prev_error_yaw
+    global target_yaw 
+    global prev_time_yaw
+    curent_time = int(round(time.time()*1000))
+    error = auv.get_yaw()-target_yaw
+    dif = 3/(curent_time-prev_time_yaw)*(error - prev_error_yaw)
+    power_value = error *0.3+dif*4
+    power_1 =int(power_value)
+    power_2 =int(power_value)
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    #print (int(power_value))
+    #print('\n')
+    auv.set_motor_power(0,(spd_yaw-power_1))
+    auv.set_motor_power(1,(spd_yaw+power_2))
+    prev_time = curent_time
+    prev_error_yaw = error                                               
+def set_course(yaw,depth,spd_yaw_target):
+    global spd_yaw
+    spd_yaw = spd_yaw_target
+    global target_depth
+    target_depth = depth
+    global target_yaw
+    target_yaw = yaw
+mission=0
+angle_last=0
+if __name__ == '__main__':
+    while True:
+        global angle
+        global area
+        if (mission == 0):
+            set_course(0,2,20)
+            start_move()
+            search_sq(auv.get_image_bottom())
+            if (area > 800):
+                mission = 1
+        if (mission ==1):
+            set_course(angle-90,1,20)
+            start_move()
+            a=0
+            for a in range (60000) :
+                print (a)
+            search_sq(auv.get_image_bottom())
+            set_course(90-angle,1,20)
+            mission = 2
+        if (mission == 2):
+            search_sq(auv.get_image_bottom())
+            set_course(90-angle,1,20)
+            stra = 90-angle
+            start_move()
+            a=0
+            for a in range (70000) :
+                print (a)
+                set_course(90-angle,1,20)
+                start_move()
+            mission = 3
+        if(mission ==3):
+            set_course(stra,1,15)
+            start_move()
+            print (center_v_centre())
+            
+            auv.drop()
+            
+            
+       
