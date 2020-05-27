@@ -1,0 +1,217 @@
+import pymurapi as mur
+from array import *
+import time
+import numpy as np
+import cv2
+import math
+auv= mur.mur_init()
+prev_time_depth=1
+prev_error_depth=1
+prev_error_yaw=1
+prev_time_yaw=1
+target_yaw=1
+target_depth = 3
+spd_yaw = 50 
+angle = 0
+area =0
+center = 0
+area=0
+color_blue = (255,0,0)
+color_yellow = (0,255,255)
+hsv_min = np.array((0, 0, 0), np.uint8)
+hsv_max = np.array((177, 200, 253), np.uint8)
+def check_h(a):
+    if(a=='0'):
+        return True
+    else:
+        return False
+def recognize(hash):
+    x=0
+    y=0
+    for x in range(16):
+        if (int(hash[x])+int(hash[x+16])+int(hash[x+2*16])==0 ):
+            print("RECOGNIZE:")
+            print(" Circle")
+                
+            return True
+            break
+        else:
+            #print(int(hash[x])+int(hash[x+16]))
+            return False
+                #print(hash[x]+hash[x+16] +hash[x+2*16]+hash[x+3*16]+hash[x+4*16]+hash[x+5*16]+hash[x+6*16]+hash[x+7*16]+hash[x+8*16]+hash[x+9*16]+hash[x+1])
+def vivod(a):
+    c=0
+    b=0
+    x=5
+    
+   #a=a[:x]+'7'+a[:x+1]
+    #a=a[:x+15]+'7'+a[:x+16]
+    #a=a[:x+30]+'7'+a[:x+31]
+    print(" ")
+    for b in range(16):
+        c=0
+        
+        print(a[16*b]+a[16*b+1]+a[16*b+2]+a[16*b+3]+a[16*b+4]+a[16*b+5]+a[16*b+6]+a[16*b+7]+a[16*b+8]+a[16*b+9]+a[16*b+10]+a[16*b+11]+a[16*b+12]+a[16*b+13]+a[16*b+14]+a[16*b+15])
+    time.sleep(0.05)
+def cheking(value,min_value=-45,max_value=45):
+    if(value>max_value):
+        value=value-90
+    if(value<min_value):
+        value=value+90
+    return value
+def CalcImageHash(img):   
+    resized = cv2.resize(img,(16,16), interpolation=cv2.INTER_AREA)  # Уменьшим картинк
+    gray_image = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)  # Переведем в черно-белый формат
+    avg=190
+    ret, threshold_image = cv2.threshold(gray_image,avg , 255, 0)  # Бинаризация по порогу
+    cv2.imshow('1',gray_image)
+    #print("avg : ")
+    #print(avg)
+    # Рассчитаем хэш
+    _hash = ""
+   
+    for x in range(16):
+        for y in range(16):
+            val = threshold_image[x, y]
+            if val == 255:
+
+                _hash = _hash + "1"
+            else:
+                _hash = _hash + "0"
+
+    return _hash
+    
+def search_sq(img):
+    hsv = cv2.cvtColor( img, cv2.COLOR_BGR2HSV ) # меняем цветовую модель с BGR на HSV
+    thresh = cv2.inRange( hsv, hsv_min, hsv_max ) # применяем цветовой фильтр
+    contours0, hierarchy = cv2.findContours( thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # перебираем все найденные контуры в цикле
+    for cnt in contours0:
+        rect = cv2.minAreaRect(cnt) # пытаемся вписать прямоугольник
+        box = cv2.boxPoints(rect) # поиск четырех вершин прямоугольника
+        box = np.int0(box) # округление координат
+        center = (int(rect[0][0]),int(rect[0][1]))
+        global area
+        area = int(rect[1][0]*rect[1][1]) # вычисление площади
+        edge1 = np.int0((box[1][0] - box[0][0],box[1][1] - box[0][1]))
+        edge2 = np.int0((box[2][0] - box[1][0], box[2][1] - box[1][1]))
+        usedEdge = edge1
+        if cv2.norm(edge2) > cv2.norm(edge1):
+            usedEdge = edge2
+        reference = (1,0) # горизонтальный вектор, задающий горизонт
+
+        # вычисляем угол между самой длинной стороной прямоугольника и горизонтом
+        global angle
+        angle = 180.0/math.pi * math.acos((reference[0]*usedEdge[0] + reference[1]*usedEdge[1]) / (cv2.norm(reference)*cv2.norm(usedEdge)))
+        if area > 300:
+           cv2.drawContours(img,[box],0,(255,0,0),2)
+           #cv2.circle(img, center, 5, color_yellow, 2) # рисуем маленький кружок в центре прямоугольника
+        # выводим в кадр величину угла наклона
+           #Wcv2.putText(img, "%d" % int(angle), (center[0]+20, center[1]-20),cv2.FONT_HERSHEY_SIMPLEX, 1, color_yellow, 2)
+    to_draw = img.copy()                    
+    cv2.imshow("Image", to_draw)
+    # cv2.imshow('contours', img) # вывод обработанного кадра в окно
+    cv2.waitKey(5)
+def center_v_centre():
+    global center
+    if center == (160, 120):
+        return 1
+def start_move():
+    start_depth()
+    start_yaw()
+def start_depth():
+    curent_time = int(round(time.time()*1000))
+    global target_depth
+    global prev_time_depth
+    global prev_error_depth
+    error = auv.get_depth()-target_depth
+    dif  = 0
+    if(curent_time-prev_time_depth!=0 and error - prev_error_depth!=0 ):
+        dif = 5/((curent_time-prev_time_depth)*(error - prev_error_depth))
+    power_value = error *10
+    power_1 =int(power_value)
+    power_2 =int(power_value)
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    #print("depth")
+    #print (int(power_value))
+   # print('\n')
+    auv.set_motor_power(2,(power_1))
+    auv.set_motor_power(3,(power_2))
+    prev_time_depth = curent_time
+    prev_error_depth = error
+def start_yaw():
+    global spd_yaw
+    global prev_error_yaw
+    global target_yaw 
+    global prev_time_yaw
+    curent_time = int(round(time.time()*1000))
+    error = auv.get_yaw()-target_yaw
+    dif = 3/(curent_time-prev_time_yaw)*(error - prev_error_yaw)
+    power_value = error +dif*10
+    power_1 =int(power_value)
+    power_2 =int(power_value)
+    if(power_value > 100):
+        power_value =100
+    if(power_value <0):
+        power_value =0
+    #print (int(power_value))
+    #print('\n')
+    auv.set_motor_power(0,(spd_yaw-power_1))
+    auv.set_motor_power(1,(spd_yaw+power_2))
+    prev_time = curent_time
+    prev_error_yaw = error                                               
+def set_course(yaw,depth,spd_yaw_target):
+    global spd_yaw
+    spd_yaw = spd_yaw_target
+    global target_depth
+    target_depth = depth
+    global target_yaw
+    target_yaw = yaw
+mission=0
+angle_last=0
+counter=0
+if __name__ == '__main__':
+    while True:
+            time.sleep(0.1)
+            global angle
+            global target_yaw
+            global counter
+            global mission 
+            global area
+            a = 0
+            hash = CalcImageHash(auv.get_image_bottom())
+            #vivod(hash
+            if(mission==0):
+                mission=1   
+                for a in range(5):
+                    search_sq(auv.get_image_bottom())
+                    if(angle-48<0):
+                        serser = angle
+                    #print(serser)
+            if(mission==1):
+                counter=counter+1
+                hash = CalcImageHash(auv.get_image_bottom())
+                #print(serser)
+                search_sq(auv.get_image_bottom())
+                #print(cheking(serser))
+                set_course(serser,3,10)
+                start_move()
+                #print (area)
+                start_move()
+                vivod(hash)
+                if(counter%6==0):
+                    stop = recognize(hash)
+                #print(counter)
+                
+            if(counter > 100 and stop):
+                mission=2
+                set_course(0,-1,0)
+                start_move()
+                search_sq(auv.get_image_bottom())    
+            
+            
+       
