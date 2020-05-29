@@ -14,31 +14,32 @@ target_depth = 3
 spd_yaw = 50 
 angle = 0
 area =0
+avg =190
 center = 0
 area=0
 color_blue = (255,0,0)
 color_yellow = (0,255,255)
 hsv_min = np.array((0, 0, 0), np.uint8)
 hsv_max = np.array((177, 200, 253), np.uint8)
-def check_h(a):
-    if(a=='0'):
-        return True
-    else:
-        return False
 def recognize(hash):
-    x=0
-    y=0
-    for x in range(16):
-        if (int(hash[x])+int(hash[x+16])+int(hash[x+2*16])==0 ):
-            print("RECOGNIZE:")
-            print(" Circle")
-                
+    global avg
+    y=0    
+    #print(hash[x]+hash[x+16]+hash[32])
+    if(int(hash[0])+int(hash[16])+int(hash[8])+int(hash[12])+int(hash[4])==0):
+        if(avg<220):
+            avg=avg+10
+            print(avg)
+    else:    
+        print (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136]))
+        if (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136])==0): 
+           
+                #vivod(hash)
             return True
-            break
+                
         else:
-            #print(int(hash[x])+int(hash[x+16]))
-            return False
-                #print(hash[x]+hash[x+16] +hash[x+2*16]+hash[x+3*16]+hash[x+4*16]+hash[x+5*16]+hash[x+6*16]+hash[x+7*16]+hash[x+8*16]+hash[x+9*16]+hash[x+1])
+                #print(int(hash[x])+int(hash[x+16]))
+           return False
+                    #print(hash[x]+hash[x+16] +hash[x+2*16]+hash[x+3*16]+hash[x+4*16]+hash[x+5*16]+hash[x+6*16]+hash[x+7*16]+hash[x+8*16]+hash[x+9*16]+hash[x+1])
 def vivod(a):
     c=0
     b=0
@@ -50,7 +51,6 @@ def vivod(a):
     print(" ")
     for b in range(16):
         c=0
-        
         print(a[16*b]+a[16*b+1]+a[16*b+2]+a[16*b+3]+a[16*b+4]+a[16*b+5]+a[16*b+6]+a[16*b+7]+a[16*b+8]+a[16*b+9]+a[16*b+10]+a[16*b+11]+a[16*b+12]+a[16*b+13]+a[16*b+14]+a[16*b+15])
     time.sleep(0.05)
 def cheking(value,min_value=-45,max_value=45):
@@ -62,7 +62,7 @@ def cheking(value,min_value=-45,max_value=45):
 def CalcImageHash(img):   
     resized = cv2.resize(img,(16,16), interpolation=cv2.INTER_AREA)  # Уменьшим картинк
     gray_image = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)  # Переведем в черно-белый формат
-    avg=190
+    global avg
     ret, threshold_image = cv2.threshold(gray_image,avg , 255, 0)  # Бинаризация по порогу
     cv2.imshow('1',gray_image)
     #print("avg : ")
@@ -182,6 +182,7 @@ if __name__ == '__main__':
             global counter
             global mission 
             global area
+            czx=1
             a = 0
             hash = CalcImageHash(auv.get_image_bottom())
             #vivod(hash
@@ -193,6 +194,7 @@ if __name__ == '__main__':
                         serser = angle
                     #print(serser)
             if(mission==1):
+               # vivod(hash)
                 counter=counter+1
                 hash = CalcImageHash(auv.get_image_bottom())
                 #print(serser)
@@ -202,16 +204,16 @@ if __name__ == '__main__':
                 start_move()
                 #print (area)
                 start_move()
-                vivod(hash)
+                #vivod(hash)
                 if(counter%6==0):
                     stop = recognize(hash)
                 #print(counter)
                 
             if(counter > 100 and stop):
                 mission=2
-                set_course(0,-1,0)
+                set_course(serser+11,-1,0)
                 start_move()
-                search_sq(auv.get_image_bottom())    
-            
-            
-       
+                if(abs(2.0-auv.get_depth())<0.1 and czx):
+                    auv.shoot()
+                    czx=0
+                search_sq(auv.get_image_bottom())
