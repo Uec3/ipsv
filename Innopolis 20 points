@@ -23,16 +23,13 @@ hsv_min = np.array((0, 0, 0), np.uint8)
 hsv_max = np.array((177, 200, 253), np.uint8)
 def recognize(hash):
     global avg
-    if(int(hash[0])+int(hash[16])+int(hash[8])+int(hash[12])+int(hash[4])==0):
-        if(avg<220):
-            avg=avg+10
-            print(avg)
-    else:    
-        print (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136]))
-        if (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136])==0): 
-            return True                
-        else:
-           return False
+    if(int(hash[0])+int(hash[16])==0):
+        avg = avg-10
+    print (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136]))
+    if (int(hash[8])+int(hash[24])+int(hash[40])+int(hash[56])+int(hash[72])+int(hash[88])+int(hash[104])+int(hash[120])+int(hash[136])==0): 
+        return True
+    else:
+        return False
 def cheking(value,min_value=-45,max_value=45):
     if(value>max_value):
         value=value-90
@@ -150,8 +147,9 @@ if __name__ == '__main__':
                 mission=1   
                 for a in range(5):
                     search_sq(auv.get_image_bottom())
-                    if(angle-48<0):
-                        serser = angle
+                    if(90 - angle<48):
+                        print(90 - angle)
+                        serser =90 - angle
             if(mission==1):
                 counter=counter+1
                 hash = CalcImageHash(auv.get_image_bottom())
@@ -164,10 +162,10 @@ if __name__ == '__main__':
                 mission=2
                 a=a+1
                 print(a)
-                if(a<40):
+                if(a<50):
                     set_course(serser+11,3,0)
                 start_move()
-                if(a>40):
+                if(a>50):
                     set_course(serser+11,-1,0)
                     start_move()    
                 if(abs(2.0-auv.get_depth())<0.05 and czx):
