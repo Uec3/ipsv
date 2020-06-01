@@ -134,6 +134,7 @@ def set_course(yaw,depth,spd_yaw_target):
 mission=0
 angle_last=0
 counter=0
+a=0
 if __name__ == '__main__':
     while True:
             time.sleep(0.1)
@@ -143,7 +144,7 @@ if __name__ == '__main__':
             global mission 
             global area
             czx=1
-            a = 0
+            global a
             hash = CalcImageHash(auv.get_image_bottom())
             if(mission==0):
                 mission=1   
@@ -157,14 +158,19 @@ if __name__ == '__main__':
                 search_sq(auv.get_image_bottom())
                 set_course(serser,3,10)
                 start_move()
-                start_move()
                 if(counter%6==0):
                     stop = recognize(hash)
             if(counter > 100 and stop):
                 mission=2
-                set_course(serser+11,-1,0)
+                a=a+1
+                print(a)
+                if(a<40):
+                    set_course(serser+11,3,0)
                 start_move()
-                if(abs(2.0-auv.get_depth())<0.1 and czx):
+                if(a>40):
+                    set_course(serser+11,-1,0)
+                    start_move()    
+                if(abs(2.0-auv.get_depth())<0.05 and czx):
                     auv.shoot()
                     czx=0
                 search_sq(auv.get_image_bottom())
