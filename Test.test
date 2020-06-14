@@ -10,6 +10,13 @@ target_yaw=1
 target_depth = 3
 ierror_yaw = 0
 ik_yaw=0
+#def  check_yaw(yaw):
+    
+    
+def modernizing_yaw(yaw):
+    if yaw<0:
+        yaw = 180-yaw
+    return yaw    
 def sr_skol():
     global target_yaw
     now_yaw=0
@@ -54,10 +61,13 @@ def start_yaw():
     if(error<0):
         ierror_yaw=ierror_yaw-1    
     dif=0
+    print(error)
+    if(error<-200):
+        error = 1
     if((curent_time-prev_time_yaw)*(error - prev_error_yaw)!=0):
         dif = 3/(curent_time-prev_time_yaw)*(error - prev_error_yaw)
    # if(dif!=0):
-      #  print(dif)
+    #print(dif)
     #print(prev_error_yaw)
     power_value = error*0.3+dif*60+ierror_yaw*ik_yaw
     power_1 =int(power_value)
@@ -84,6 +94,7 @@ def Akustic_range(number):
     buff = auv.get_pinger_data(number)        
     return buff[1]
 mission=0
+counter = 0
 class Akustic(object):
     def __init__(self,angle,range):
         self.angle=angle
@@ -95,18 +106,22 @@ while True:
     global target_yaw
     #sleep(01)
     global mission
+    global counter
+    #print(mission)
     if(Akustic_angle(1)+Akustic_angle(0)+Akustic_angle(2)+Akustic_angle(3)!=0 and mission ==0):
         Akustik_0=Akustic(Akustic_angle(0),Akustic_range(0))     
         Akustik_1=Akustic(Akustic_angle(1),Akustic_range(1))
         Akustik_2=Akustic(Akustic_angle(2),Akustic_range(2))
         Akustik_3=Akustic(Akustic_angle(3),Akustic_range(3))
+        
         mission=1
     if(mission==1):
+        #print(Akustik_1.angle)
         #print(1)
         set_course(Akustik_0.angle,1.7,20*sr_skol())
         start_move()
         old_angle = auv.get_yaw()
-        print(Akustic_angle(1))
+        #print(Akustic_angle(1))
         if((Akustic_range(0)-2.1)<0 and mission ==1):
             mission = 2
             #print(mission)
@@ -118,7 +133,6 @@ while True:
             Akustik_2=Akustic(Akustic_angle(2),Akustic_range(2))
             Akustik_3=Akustic(Akustic_angle(3),Akustic_range(3))
     if(mission == 2):
-        print(Akustic_angle(1))
-        #print(-now_yaw+Akustik_1.angle)
-        set_course(Akustik_1.angle-old_yaw,1.7,20*sr_skol())
+        #print(modernizing_yaw(old_yaw)+Akustik_1.angle)
+        set_course(modernizing_yaw(old_yaw)+Akustik_1.angle,1.7,20*sr_skol())
         start_move()
