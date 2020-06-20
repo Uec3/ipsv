@@ -21,34 +21,39 @@ fourth_marker = 0
 target_x=0
 target_y=0
 alignment_angle=0
+msi=0
+def Return():
+    global counter
+    global mission
+    global msi
+    counter = counter + 1
+    print(counter)
+    if(mission != msi):
+        msi =mission 
+        counter = 0
+    if(counter >1500):
+        mission = mission-1
+        counter = 0
 def alignment():
-    
     global negative
     global alignment_angle
     global target_x
     global target_y
     dx = abs(int(180 - target_x))
     dy = int(120 - target_y)
-    #print(dx*dx+dy*dy)
     if(dx!=145 and dy!=100):
         try:
             radian = math.atan(dx/dy)
-            #print(radian)
         except ZeroDivisionError:
             radian = 2*np.pi
         deegrees = math.degrees(radian)/2    
         if(deegrees<0):
             deegrees=45
         alignment_angle=deegrees
-        #if(deegrees+auv.get_yaw()>180):
-        #    print("exxept")
-         #   deegrees=deegrees
-       # print(dx*dx+dy*dy)
         if(dx*dx+dy*dy)>50:
             return 1123
         else:
-            return 1110101010101
-               
+            return 1110101010101  
     else:
         return 1010101010101
 dt = np.dtype(int)
@@ -61,21 +66,14 @@ def recognize(img):
     thresh = cv.inRange(img,lower,upper,img)
     contours,hierarchy=cv.findContours( thresh.copy(), cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
     cnt= 0 
-    cv.circle(img,(180,120),5,(255,0,0),3)
     for cnt in contours:
         if(cv.contourArea(cnt)>100):
-            #print(cv.contourArea(cnt))
-            
             moments = cv.moments(thresh, 1)
             dM01 = moments['m01']
             dM10 = moments['m10']
             dArea = moments['m00']
             target_x = int(dM10/dArea)
             target_y = int(dM01/dArea)
-            #print(target_x)
-            #print(target_y)
-            cv.circle(img,(target_x,target_y),5,(255,0,0),3)
-            cv.line(img,(145,100),(target_x,target_y),(255,0,0),3)
             area = cv.contourArea(cnt)
             area_circle=0
             (x,y), r = cv.minEnclosingCircle(cnt)
@@ -87,12 +85,11 @@ def recognize(img):
             box = np.int0(box) 
             rectangle = cv.contourArea(box)
             check_square = abs(rectangle-cv.contourArea(cnt))
-            #print(check_square)
-            if(check_circle <650):
-                return 1
-            elif(check_square<600):
+            if(check_square<700 and check_circle>750  ):
                 return 2
-            elif(check_square>800):
+            elif(check_circle <500):
+                return 1
+            elif(cv.contourArea(cnt)>200):
                 return 3
             else:
                 return 0
@@ -140,10 +137,7 @@ def start_yaw():
     global target_yaw 
     global prev_time_yaw
     curent_time = int(round(time.time()*1000))
-    #error = auv.get_yaw()-target_yaw
-    
     error = (target_yaw-auv.get_yaw() + 540)%360 -180
-    #print(error)
     if(error<0):
         ierror_yaw=ierror_yaw+1
     if(error>0):
@@ -188,9 +182,7 @@ class Akustic(object):
 if __name__ == '__main__':
     while True:
         sleep(0.05)
-        #print(mission)
         if(Akustic_angle(0)+Akustic_angle(1)+Akustic_angle(2)+Akustic_angle(3)!=0):
-            #print(190//180)
             global end
             global alignment_angle
             global akustic_old_range
@@ -202,34 +194,21 @@ if __name__ == '__main__':
             global mission
             global counter
             recognize(auv.get_image_bottom())
-            #alignment()
             Akustik_0=Akustic(Akustic_angle(0),Akustic_range(0))     
             Akustik_1=Akustic(Akustic_angle(1),Akustic_range(1))
             Akustik_2=Akustic(Akustic_angle(2),Akustic_range(2))
             Akustik_3=Akustic(Akustic_angle(3),Akustic_range(3))
-            #print(mission)
+            Return()
             if(mission==1):
                 print("Search 1 basket")
-                #print("seach first")
-                #print( first_marker)
-                #print(Akustik_0.range)
                 set_course(auv.get_yaw()+Akustik_0.angle,1.4,(25+15*(Akustik_0.range>4))*sr_skol())
-                #print(25+10*(Akustik_0.range>3))
                 start_move()
-                #print(Akustik_0.range-akustic_old_range<0)   
-                if( mission ==1 and Akustik_0.range<2.4 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101):
+                if( mission ==1 and Akustik_0.range<2.42 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
                     mission=2
-                    #old_yaw = auv.get_yaw()
-                    #auv.drop()
-                    #while (alignment()):
-                       # set_course((auv.get_yaw()+alignment()%180),2,20*sr_skol())
-                        #start_move()
             if(mission==2):
                 print("Search 1 marker")
-                #print(alignment()
                 if(alignment()==1110101010101 or alignment()==1010101010101 and mission==2):
                     first_marker = recognize(auv.get_image_bottom())
-                    #auv.shoot()
                     print(first_marker)
                     if(first_marker==1):
                         auv.drop()
@@ -238,20 +217,16 @@ if __name__ == '__main__':
                 start_move()
             if(mission == 3):
                 print("Search 2 basket")
-                #print("seach secound")
-                #print( second_marker)
-                #print(Akustik_1.angle)
-                #print(Akustik_1.range)
                 set_course(auv.get_yaw()+Akustik_1.angle,1.4,(25+15*(Akustik_1.range>4))*sr_skol())
                 start_move()
-                if(mission ==3 and Akustik_1.range<2.4 and Akustik_0.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101):
+                if(mission ==3 and Akustik_1.range<2.41 and Akustik_0.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
                     mission=4
                     #print(missi
             if(mission==4):
                 print("Search 2 marker")
                 if(alignment()==1110101010101 or alignment()==1010101010101 and mission==4):
                     second_marker = recognize(auv.get_image_bottom())
-                    #auv.shoot()
+                    print(second_marker)
                     if(second_marker==1):
                         auv.drop()
                     mission=5
@@ -259,19 +234,15 @@ if __name__ == '__main__':
                 start_move() 
             if(mission == 5):
                 print("Search 3 basket")
-                #print("seach third")
-                #print( third_marker)
-                #print(Akustik_2.range)
-                #print(Akustik_1.angle)
                 set_course(auv.get_yaw()+Akustik_2.angle,1.4,(25+15*(Akustik_2.range>4))*sr_skol())
                 start_move()
-                if(mission ==5 and Akustik_2.range<2.4 and Akustik_1.range>2 and Akustik_0.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101):
+                if(mission ==5 and Akustik_2.range<2.41 and Akustik_1.range>2 and Akustik_0.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
                     mission=6
             if (mission ==6):
                 print("Search 3 marker")
                 if(alignment()==1110101010101 or alignment()==1010101010101 and mission==6):
-                    #auv.shoot()
                     third_marker = recognize(auv.get_image_bottom())
+                    print(third_marker)
                     if(third_marker==1):
                         auv.drop()
                     if(third_marker==3 and second_marker==1 and first_marker==1):
@@ -284,20 +255,20 @@ if __name__ == '__main__':
                 print("Search 4 basket")
                 set_course(auv.get_yaw()+Akustik_3.angle,1.4,(25+15*(Akustik_3.range>4))*sr_skol())
                 start_move()
-                if(mission ==7 and Akustik_3.range<2.4 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_0.range>2 and alignment()!= 1010101010101):
+                if(mission ==7 and Akustik_3.range<2.41 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_0.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
                     mission=8
             if (mission ==8):
                 print("Search 4 marker")
                 if(alignment()==1110101010101 or alignment()==1010101010101 and mission==8):
                     #auv.shoot()
                     fourth_marker = recognize(auv.get_image_bottom())
+                    print(fourth_marker)
                     if(fourth_marker==1):
                         auv.drop()
                     if(fourth_marker==3):
                         mission=12
                     else:
                         mission=9
-                    
                 set_course(auv.get_yaw()+alignment_angle,1.7,20*sr_skol())
                 start_move()
             if(mission==9):
@@ -314,7 +285,7 @@ if __name__ == '__main__':
                 print("Search last basket")
                 set_course(auv.get_yaw()+Akustic_angle(end),1.4,(25+15*(Akustic_range(end)>4))*sr_skol())
                 start_move()
-                if(mission==10 and Akustic_range(end)<2.4 and alignment()!= 1010101010101):
+                if(mission==10 and Akustic_range(end)<2.41 and alignment()!= 1010101010101):
                     mission=11
             if (mission==11):
                 print("Search last marker")
@@ -322,21 +293,7 @@ if __name__ == '__main__':
                     mission=12
                 set_course(auv.get_yaw()+alignment_angle,1.7,20*sr_skol())
                 start_move() 
-            #if(mission == 8 ):
             if(mission==12):
                 print("END")
                 set_course(auv.get_yaw(),-1,0)
                 start_move()         
-            
-        
-        
-        
-        
-        
-#d = (target_yaw-auv.get_yaw + 540)%360 -180
-      
-      
-      
-      
-      
-      
