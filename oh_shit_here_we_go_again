@@ -73,7 +73,7 @@ def Return():
     if(mission != msi):
         msi =mission 
         counter = 0
-    if(counter >1500):
+    if(counter >1500 and mission%2==0):
         mission = mission-1
         counter = 0
 def al():
@@ -289,8 +289,9 @@ if __name__ == '__main__':
                 dx,dy = al()
                 print("Search last marker")
                 al();               
-                
-                if(recognize(auv.get_image_bottom())>0 and mission==11 and abs(dx)<6 and abs(dy)<6):
+                set_course(auv.get_yaw(),2.1,20*sr_skol())
+                start_depth()
+                if(recognize(auv.get_image_bottom())>0 and mission==11 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    mission=12
                    
             if(mission==12):
