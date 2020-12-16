@@ -201,7 +201,7 @@ if __name__ == '__main__':
                 dx,dy = al()
                 print("Search 1 marker")
                 al();     
-                set_course(auv.get_yaw(),2,20*sr_skol())
+                set_course(auv.get_yaw(),2.1,20*sr_skol())
                 start_depth()          
               #  print(dx)
                # print(dy)
@@ -221,7 +221,7 @@ if __name__ == '__main__':
             if(mission==4):
                 dx,dy = al()
                 print("Search 2 marker")
-                set_course(auv.get_yaw(),2,20*sr_skol())
+                set_course(auv.get_yaw(),2.1,20*sr_skol())
                 start_depth()          
                 al();               
                 if(mission==4 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
@@ -241,7 +241,7 @@ if __name__ == '__main__':
                 dx,dy = al()
                 print("Search 1 marker")
                 al();               
-                set_course(auv.get_yaw(),2,20*sr_skol())
+                set_course(auv.get_yaw(),2.1,20*sr_skol())
                 start_depth()
                 if(mission==6 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    third_marker = recognize(auv.get_image_bottom())
@@ -260,7 +260,8 @@ if __name__ == '__main__':
                 dx,dy = al()
                 print("Search 4 marker")
                 al();               
-                
+                set_course(auv.get_yaw(),2.1,20*sr_skol())
+                start_depth()
                 if(mission==8 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    fourth_marker = recognize(auv.get_image_bottom())
                    print(fourth_marker)
@@ -282,7 +283,7 @@ if __name__ == '__main__':
                 print("Search last basket")
                 set_course(auv.get_yaw()+Akustic_angle(end),1.4,(60+15*(Akustic_range(end)>4))*sr_skol())
                 start_move()
-                if(mission==10 and Akustic_range(end)<2.41 and alignment()!= 1010101010101):
+                if(mission==10 and Akustic_range(end)<2.41):
                     mission=11
             if (mission==11):
                 dx,dy = al()
