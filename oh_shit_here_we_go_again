@@ -88,28 +88,6 @@ def al():
         auv.set_motor_power(1,dy*0.8)
         auv.set_motor_power(4,dx*0.8)
     return dx,dy;
-def alignment():
-    global negative
-    global alignment_angle
-    global target_x
-    global target_y
-    dx = abs(int(210 - target_x))
-    dy = int(120 - target_y)
-    if(dx!=145 and dy!=100):
-        try:
-            radian = math.atan(dx/dy)
-        except ZeroDivisionError:
-            radian = 2*np.pi
-        deegrees = math.degrees(radian)/2    
-        if(deegrees<0):
-            deegrees=45
-        alignment_angle=deegrees
-        if(dx*dx+dy*dy)>50:
-            return 1123
-        else:
-            return 1110101010101  
-    else:
-        return 1010101010101
 def sr_skol():
     global target_yaw
     now_yaw=0
@@ -217,17 +195,17 @@ if __name__ == '__main__':
                 print("Search 1 basket")
                 set_course(auv.get_yaw()+Akustik_0.angle,1.4,(60+15*(Akustik_0.range>4))*sr_skol())
                 start_move()
-                if( mission ==1 and Akustik_0.range<2.42 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
+                if( mission ==1 and Akustik_0.range<2.42 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and recognize(auv.get_image_bottom())):
                     mission=2
             if(mission==2):
                 dx,dy = al()
                 print("Search 1 marker")
                 al();     
-             #  set_course(auv.get_yaw(),1.7,20*sr_skol())
-           #     start_move()          
+                set_course(auv.get_yaw(),2,20*sr_skol())
+                start_depth()          
               #  print(dx)
                # print(dy)
-                if(mission==2 and abs(dx)<3 and abs(dy)<3):
+                if(mission==2 and abs(dx)<3 and abs(dy)<3 and auv.get_depth()>2):
                    first_marker = recognize(auv.get_image_bottom())
                    print(first_marker)
                    if(first_marker==1):
@@ -237,14 +215,16 @@ if __name__ == '__main__':
                 print("Search 2 basket")
                 set_course(auv.get_yaw()+Akustik_1.angle,1.4,(60+15*(Akustik_1.range>4))*sr_skol())
                 start_move()
-                if(mission ==3 and Akustik_1.range<2.41 and Akustik_0.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
+                if(mission ==3 and Akustik_1.range<2.41 and Akustik_0.range>2 and Akustik_2.range>2 and Akustik_3.range>2 and recognize(auv.get_image_bottom())):
                     mission=4
                     #print(missi
             if(mission==4):
                 dx,dy = al()
                 print("Search 2 marker")
+                set_course(auv.get_yaw(),2,20*sr_skol())
+                start_depth()          
                 al();               
-                if(recognize(auv.get_image_bottom())>0 and mission==4 and abs(dx)<6 and abs(dy)<6):
+                if(mission==4 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    second_marker = recognize(auv.get_image_bottom())
                    print(second_marker)
                    if(second_marker==1):
@@ -255,14 +235,15 @@ if __name__ == '__main__':
                 print("Search 3 basket")
                 set_course(auv.get_yaw()+Akustik_2.angle,1.4,(60+15*(Akustik_2.range>4))*sr_skol())
                 start_move()
-                if(mission ==5 and Akustik_2.range<2.41 and Akustik_1.range>2 and Akustik_0.range>2 and Akustik_3.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
+                if(mission ==5 and Akustik_2.range<2.41 and Akustik_1.range>2 and Akustik_0.range>2 and Akustik_3.range>2 and recognize(auv.get_image_bottom())):
                     mission=6
             if (mission ==6):
                 dx,dy = al()
                 print("Search 1 marker")
                 al();               
-                
-                if(recognize(auv.get_image_bottom())>0 and mission==6 and abs(dx)<6 and abs(dy)<6):
+                set_course(auv.get_yaw(),2,20*sr_skol())
+                start_depth()
+                if(mission==6 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    third_marker = recognize(auv.get_image_bottom())
                    print(third_marker)
                    if(third_marker==1):
@@ -273,14 +254,14 @@ if __name__ == '__main__':
                 print("Search 4 basket")
                 set_course(auv.get_yaw()+Akustik_3.angle,1.4,(60+15*(Akustik_3.range>4))*sr_skol())
                 start_move()
-                if(mission ==7 and Akustik_3.range<2.41 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_0.range>2 and alignment()!= 1010101010101 and recognize(auv.get_image_bottom())):
+                if(mission == 7 and Akustik_3.range<2.41 and Akustik_1.range>2 and Akustik_2.range>2 and Akustik_0.range>2 and recognize(auv.get_image_bottom())):                  
                     mission=8
             if (mission ==8):
                 dx,dy = al()
                 print("Search 4 marker")
                 al();               
                 
-                if(recognize(auv.get_image_bottom())>0 and mission==8 and abs(dx)<6 and abs(dy)<6):
+                if(mission==8 and abs(dx)<6 and abs(dy)<6 and auv.get_depth()>2):
                    fourth_marker = recognize(auv.get_image_bottom())
                    print(fourth_marker)
                    if(fourth_marker==1):
@@ -314,10 +295,6 @@ if __name__ == '__main__':
             if(mission==12):
                 print("END")
                 set_course(auv.get_yaw(),-1,0)
-                start_move()         
-                                
-                                
-                                
-                                
-                                
-                                
+                start_move()
+            
+            
